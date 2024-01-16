@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -43,10 +44,19 @@ public class Main {
         logger.info("project path: " + config.getProjectPath());
         config.setTestRunnerVerbose(true);
         config.setFamily(FlacocoConfig.FaultLocalizationFamily.SPECTRUM_BASED);
-        config.setTestDetectionStrategy(FlacocoConfig.TestDetectionStrategy.TEST_RUNNER);//TEST_RUNNER & CLASSLOADER
+        config.setTestDetectionStrategy(FlacocoConfig.TestDetectionStrategy.CLASSLOADER);//TEST_RUNNER & CLASSLOADER
         logger.info("TestDetectionStrategy: " + config.getTestDetectionStrategy());
         config.setSpectrumFormula(SpectrumFormula.OCHIAI);
         config.setComputeSpoonResults(true);
+        Set<String> excludes = new HashSet<>();
+//        excludes.add("org.jsoup.parser.*"); * not work!
+//        excludes.add("org.jsoup.parser.TokenQueueTest");
+        excludes.add("org.jsoup.integration.UrlConnectTest");//according to the document, class/method are accepted here
+// Jacoco is a code coverage tool, not a fault localization tool. So this statement can not exclude tests
+//        config.setJacocoExcludes(excludes);
+        config.setIgnoredTests(excludes);//exclude tests
+        System.out.println(config.isIncludeZeros());
+//        config.setIncludeZeros(true);//if this set to true, you will see more suspicious locations with suspicious value 0.0
         Flacoco flacoco = new Flacoco(config);
         FlacocoResult result = flacoco.run();
 
@@ -62,7 +72,10 @@ public class Main {
         logger.info("---------------------");
         System.out.println("suspicious mapping size: " + mapping.size());
         logger.info("suspicious mapping size: " + mapping.size());
-        mapping.forEach((k, v) -> {
+        mapping.forEach((k, v) -> {//Location ==> Suspiciousness
+            System.out.println("class: " + k.getClassName());
+            System.out.println("line: " + k.getLineNumber());
+            System.out.println("score: " + v.getScore());
             System.out.println(k + " : " + v);
             logger.info(k + " : " + v);
         });
